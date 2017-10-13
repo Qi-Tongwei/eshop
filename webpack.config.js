@@ -5,6 +5,7 @@ var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 //环境变量的配置，dev / online
 var WEBPACK_ENV = process.env.WEBPACK_ENV || 'dev';
+console.log(WEBPACK_ENV);
 
 var getHtmlConfig = function(name,title){ // 获取html-webpack-plugin参数的方法
     return {
@@ -36,45 +37,60 @@ var config = { // webpack config
              'user-center-update' : ['./src/page/user-center-update/index.js'],
              'user-pass-update' : ['./src/page/user-pass-update/index.js'],
              'result' : ['./src/page/result/index.js'],
+             'about' : ['./src/page/about/index.js'],
      },
 
      output : {
-         path :  './dist/',
-         publicPath : '/dist/', // 浏览器中的路径
-         filename :  'js/[name].js', // 将编译后的JS文件归类到js文件夹下，编译后的文件名按照源文件的名字命名
+        // webpack高版本只支持绝对路径，所以这里改成绝对路径
+         path :  __dirname + '/dist/',
+         // 文件引用路径，线上环境则改变原来的dist的本地引用的路径
+         publicPath : 'dev' === WEBPACK_ENV ? '/dist/' : '//s.happymmall.com/eshop/dist/', 
+         // 将编译后的JS文件归类到js文件夹下，编译后的文件名按照源文件的名字命名
+         filename :  'js/[name].js', 
      },
-
-     externals : { // 可以将外部的变量或者模块加载进来
+     // 可以将外部的变量或者模块加载进来
+     externals : { 
      	'jquery' : 'window.jQuery'
      },
-
-     module : {// webpack处理CSS，并且单独打包
+    // webpack处理CSS，并且单独打包
+     module : {
         loaders : [
             { test : /\.css$/, loader : ExtractTextPlugin.extract("style-loader","css-loader")},
             { test: /\.(gif|png|jpg|woff|svg|eot|ttf)\??.*$/, loader: 'url-loader?limit=100&name=resource/[name].[ext]' },
-            { test : /\.string$/, loader : 'html-loader'}
+            { 
+                test : /\.string$/, 
+                loader : 'html-loader',
+                query : {
+                    minimize : true,
+                    removeAttributeQuotes : false
+                }
+            }
         ]
     },
 
     resolve : {
         alias : {
+            // __dirname表示当前根目录
             node_modules : __dirname + '/node_modules',
-            util : __dirname + '/src/util', // __dirname表示当前根目录
+            util : __dirname + '/src/util', 
             page : __dirname + '/src/page',
             service : __dirname + '/src/service',
             image : __dirname + '/src/image',
         }
     },
-
-     plugins : [ // plungins是webpack的插件，在安装完webpack的插件后，
-     	       // plugins关键字部分添加该插件的一个实例（plugins是一个数组）。
-     	new webpack.optimize.CommonsChunkPlugin({ // 提取公共模块。
-                name : 'common', // 文件名
-     	   filename : 'js/base.js' // path关键字已经给定了输出文件的目录，
-     				//所以common新生成的文件根路径还是在dist下。
+    // plungins是webpack的插件，在安装完webpack的插件后，
+    // plugins关键字部分添加该插件的一个实例（plugins是一个数组）。
+     plugins : [ 
+             // 提取公共模块。
+     	new webpack.optimize.CommonsChunkPlugin({ 
+                 // 文件名
+                name : 'common',
+                // path关键字已经给定了输出文件的目录，
+                //所以common新生成的文件根路径还是在dist下。
+     	   filename : 'js/base.js' 
      	}),
-
-            new ExtractTextPlugin("css/[name].css"), //单独打包CSS，[name]是一个变量，值为源文件的名字。
+            //单独打包CSS，[name]是一个变量，值为源文件的名字。
+            new ExtractTextPlugin("css/[name].css"), 
 
             // html模板打包处理
             new HtmlWebpackPlugin(getHtmlConfig('index','首页')),
@@ -92,9 +108,11 @@ var config = { // webpack config
             new HtmlWebpackPlugin(getHtmlConfig('user-center','个人中心')),
             new HtmlWebpackPlugin(getHtmlConfig('user-center-update','修改个人信息')),
             new HtmlWebpackPlugin(getHtmlConfig('user-pass-update','修改密码')),
+            new HtmlWebpackPlugin(getHtmlConfig('about','关于MMall'))
      ]
  };
 
+// 开发环境下增加如下的client
 if('dev' === WEBPACK_ENV){
     config.entry.common.push('webpack-dev-server/client?http://localhost:8088/');
 }
